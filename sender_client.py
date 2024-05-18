@@ -2,9 +2,11 @@ import socket
 import threading
 import pygame
 import sys
+from time import sleep
 
 server_ip = "192.168.1.19"
 server_port = 6666
+users = []
 
 pygame.init()
 
@@ -15,14 +17,17 @@ pygame.display.set_caption("Client de Jeu Multijoueur")
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
 # Boutons
 button_font = pygame.font.Font(None, 36)
 button_text_join = button_font.render("Rejoindre", True, WHITE)
-button_text_quit = button_font.render("Quitter le Lobby", True, WHITE)
+button_text_quit = button_font.render("Quitter", True, WHITE)
 button_rect_join = pygame.Rect(220, 200, 200, 50)
 button_rect_quit = pygame.Rect(220, 300, 200, 50)
 button_color = RED
+users_rect = pygame.Rect(120, 100, 400, 250)
+users_text_font = pygame.font.Font(None, 24)
 
 def connect_to_server(exit_event):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,14 +38,17 @@ def connect_to_server(exit_event):
 
     def send_message():
         while running_threads:
-            message = "position: 100,200"
-            client.send(bytes(message, "utf-8"))
-            pygame.time.wait(1000)
+            # message = "position: 100,200"
+            # client.send(bytes(message, "utf-8"))
+            pygame.time.wait(10)
 
     def receive_response():
         while running_threads:
             response = client.recv(1024)
             print("Réponse du serveur:", response.decode("utf-8"))
+            users.append(response.decode("utf-8"))
+            if response.decode("utf-8") == "new_wave":
+                users.clear()
 
     send_thread = threading.Thread(target=send_message)
     receive_thread = threading.Thread(target=receive_response)
@@ -56,7 +64,6 @@ def connect_to_server(exit_event):
 
     running_threads = False
     client.send(b"exit")
-    client.close()
 
     return
 
@@ -79,6 +86,17 @@ def display_lobby():
         screen.fill(BLACK)
         pygame.draw.rect(screen, button_color, button_rect_quit)
         screen.blit(button_text_quit, (button_rect_quit.x + 20, button_rect_quit.y + 10))
+
+        # Dessiner la zone de texte pour les utilisateurs connectés
+        pygame.draw.rect(screen, BLUE, users_rect, 2)
+        # Exemple d'utilisateurs connectés
+        # users = ["User1", "User2", "User3"]
+        y_offset = 0
+        for user in users:
+            user_text = users_text_font.render(user, True, WHITE)
+            screen.blit(user_text, (users_rect.x + 10, users_rect.y + 10 + y_offset))
+            y_offset += 30
+
         pygame.display.flip()
 
     connect_thread.join()
