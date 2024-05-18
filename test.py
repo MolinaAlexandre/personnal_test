@@ -11,14 +11,17 @@ class Player2:
         self.size = 50
 
 def parse_data_and_get_position(data, player2):
-    print("VALEUR RECUE : ", data.decode('utf-8'))
-    try :
-        x, y = data.decode().split(",")
+    full_data = data.decode('utf-8')
+    print("VALEUR RECUE : ", full_data)
+    
+    try:
+        # Prenez uniquement les 7 derniers caractères
+        last_seven_chars = full_data[-7:]
+        x, y = last_seven_chars.split(",")
         player2.x = int(x)
         player2.y = int(y)
     except Exception as e:
         print(f"Error parsing data: {e}")
-
 
 def receive_data_from_server(client, player2):
     while True:
