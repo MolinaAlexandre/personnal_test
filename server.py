@@ -3,7 +3,6 @@ import threading
 from time import sleep
 from map import MiniGame1
 
-# Liste pour stocker les connexions clients actives
 clients = []
 ingame = []
 usernames = []
@@ -30,7 +29,6 @@ def send_to_ingame():
     for c in clients:
         for u in ingame:
             if c.getpeername() == u:
-                print("he is ingame")
                 c.send(bytes("You are Ingame", "utf-8"))
 
 
@@ -38,7 +36,6 @@ def get_ingame_pos(message, sender_addr):
     for client_socket in clients:
         addr = client_socket.getpeername()
         if addr in ingame and addr != sender_addr:
-            print("sending to this player:", addr)
             client_socket.send(bytes(message, "utf-8"))
 
 
@@ -53,9 +50,7 @@ def check_before_launch():
         for c in clients:
             c.send(bytes("start", "utf-8"))
 
-# Définition de la fonction de gestion des connexions clients
 def handle_client(client_socket, addr):
-    print(f"Connexion établie avec {addr}")
     clients.append(client_socket)
     
     while True:
@@ -66,7 +61,6 @@ def handle_client(client_socket, addr):
             data = None
 
         if not data:
-            print(f"Connexion fermée par {addr}")
             clients.remove(client_socket)
             del_users(addr)
             del_ingame_player(addr)
@@ -91,7 +85,6 @@ def handle_client(client_socket, addr):
             if peer_adr != addr:
                 message_to_send = f"Reçu de {addr}: {data.decode('utf-8')}"
             if data.decode("utf-8") == "exit":
-                print(f"Déconnexion demandée par {addr}")
                 clients.remove(client_socket)
                 del_users(addr)
                 del_ingame_player(addr)
@@ -112,6 +105,5 @@ print(f"Serveur en attente de connexions sur {server_ip}:{server_port}")
 
 while True:
     client_socket, addr = server.accept()
-    # Démarrer un thread pour gérer la connexion avec le client
     client_handler = threading.Thread(target=handle_client, args=(client_socket, addr))
     client_handler.start()

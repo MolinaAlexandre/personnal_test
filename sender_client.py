@@ -79,7 +79,6 @@ def connect_to_server(exit_event, launch_event, username, start_game):
     global client
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((server_ip, server_port))
-    print("Connecté au serveur")
     client.send(bytes(username, "utf-8"))
 
     running_threads = True
@@ -87,7 +86,6 @@ def connect_to_server(exit_event, launch_event, username, start_game):
     def send_message():
         while running_threads:
             try:
-                # Simulate sending data to the server
                 pygame.time.wait(10)
             except Exception as e:
                 print(f"Send message error: {e}")
@@ -99,9 +97,7 @@ def connect_to_server(exit_event, launch_event, username, start_game):
                 response = client.recv(1024)
                 if not response:
                     break
-                print("Réponse du serveur:", response.decode("utf-8"))
                 if response.decode("utf-8") == "start":
-                    print("START DETECTED")
                     client.send(bytes("ingame", "utf-8"))
                     sleep(2)
                     exit_event.set()
@@ -123,15 +119,11 @@ def connect_to_server(exit_event, launch_event, username, start_game):
     while not exit_event.is_set():
         sleep(0.1)
 
-    print("Quitting threads")
-
     running_threads = False
     # client.close()
 
     send_thread.join()
     receive_thread.join()
-
-    print("Threads stopped and socket closed")
 
 def display_lobby(username, launch_event):
     exit_event = threading.Event()
@@ -167,7 +159,6 @@ def display_lobby(username, launch_event):
             running = False
 
     connect_thread.join()
-    print("Fin de la connexion")
 
 def game():
     launch_event = threading.Event()
@@ -178,7 +169,6 @@ def game():
                 if client is not None:
                     client.close()
                 pygame.quit()
-                print("Quitting")
                 return
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect_join.collidepoint(event.pos):
@@ -201,6 +191,5 @@ def game():
         pygame.display.flip()
 
     launch_game()
-    print("Fin du programme")
 
 game()
