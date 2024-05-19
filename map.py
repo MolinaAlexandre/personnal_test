@@ -50,21 +50,25 @@ class Boxes(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
 
-class Doors(pygame.sprite.Sprite):
+class Doors():
     def __init__(self, door_img, x, y):
-        super().__init__()
         self.spritesheet = pygame.image.load(door_img).convert_alpha()
         self.images = self.load_images(self.spritesheet)
         self.current_state = 'closed'
         self.image = self.images[self.current_state]
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
+        self.animation_frames = ["closed", "opening", "opened"]
+        self.animation_index = 0
+        self.animation_speed = 0.1
+        self.last_update = pygame.time.get_ticks()
 
-    def load_images(self, spritesheet):
+
+    def load_images(self, sheet):
         images = {
-            'closed': self.get_image(spritesheet, 0, 0, 50, 50),
-            'opening': self.get_image(spritesheet, 80, 0, 100, 100),
-            'open': self.get_image(spritesheet, 160, 0, 100, 100)
+            'closed': self.get_image(sheet, 0, 0, 448 / 3 - 5, 176),
+            'opening': self.get_image(sheet, 448 / 3 - 25, 0, 448 / 3 - 10, 176),
+            'opened': self.get_image(sheet, 2 * (448 / 3) - 40, 0, 448 / 3 + 20, 176)
         }
         return images
 
@@ -78,27 +82,51 @@ class Doors(pygame.sprite.Sprite):
             self.current_state = new_state
             self.image = self.images[self.current_state]
 
+    def make_animation(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.animation_speed * 1000:
+            self.last_update = now
+            self.animation_index += 1
+            if self.animation_index >= len(self.animation_frames):
+                self.animation_index = len(self.animation_frames) - 1
+            self.current_state = self.animation_frames[self.animation_index]
+            self.image = self.images[self.current_state]
+
+def draw_doors(screen, _doors):
+    for i in _doors:
+        screen.blit(i.image, i.rect.topleft)
+
+def fill_obstacles(colonne_obstacles, length_item, _boxes, _doors, _nb_lines):
+    box_y = 0
+    box_x = 0
+    for nb_lines in range(_nb_lines):
+        box_x = nb_lines * 200
+        box_y = 0
+        for item in range(length_item):
+            if colonne_obstacles[nb_lines][item] == 'box':
+                _boxes.add(Boxes("Assets/box.png", 500 + box_x, box_y))
+                box_y += 200
+            else:
+                _doors.append(Doors("Assets/porte.png", 500 + box_x, box_y - 100))
+
 def main():
     pygame.init()
     running = True
+    _screen = pygame.display.set_mode((1600, 800))
     flame_x = -50
     _time = Time("Assets/Roboto/Roboto-Black.ttf", 20, 1350, 10, 3)
     _flames = pygame.sprite.Group()
     _boxes = pygame.sprite.Group()
-    _doors = pygame.sprite.Group()
-    _screen = pygame.display.set_mode((1600, 800))
-    colonne_obstacles = ['box', 'door', 'box', 'door', 'box', 'door', 'box', 'door']
-    box_y = 0
-    length_item = len(colonne_obstacles)
+    _doors = [Doors("Assets/porte.png", 1520, 400)]
+    colonne_obstacles = [['box', 'door', 'box', 'door', 'box', 'door', 'box', 'door'],
+                         ['box', 'door', 'box', 'door', 'box', 'door', 'box', 'door'],
+                         ['box', 'door', 'box', 'door', 'box', 'door', 'box', 'door'],
+                         ['box', 'door', 'box', 'door', 'box', 'door', 'box', 'door'],
+                         ['box', 'door', 'box', 'door', 'box', 'door', 'box', 'door']]
+    length_item = len(colonne_obstacles[0])
+    nb_lines = len(colonne_obstacles)
 
-    for item in range(length_item):
-        if colonne_obstacles[item] == 'box':
-            _boxes.add(Boxes("Assets/box.png", 300, box_y))
-            box_y += 200
-        else:
-            _boxes.add(Boxes("Assets/porte.png", 300, box_y - 100))
-
-
+    fill_obstacles(colonne_obstacles, length_item, _boxes, _doors, nb_lines)
     _flames.add(Flame("Assets/flammes.png", flame_x, 0))
     while running:
         for event in pygame.event.get():
@@ -106,7 +134,7 @@ def main():
                 running = False
         _screen.fill(sand_color)
         _boxes.draw(_screen)
-        _doors.draw(_screen)
+        draw_doors(_screen, _doors)
         _flames.draw(_screen)
         _time.update_time(_screen)
         if _time.flame_added:
