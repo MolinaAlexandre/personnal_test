@@ -3,7 +3,7 @@ import threading
 import pygame
 import sys
 from time import sleep
-from map import MiniGame1
+from map import mini_game1
 from test import MiniGame2
 
 server_ip = "91.173.101.151"
@@ -28,7 +28,9 @@ BLUE = (0, 0, 255)
 button_font = pygame.font.Font(None, 36)
 button_text_join = button_font.render("Rejoindre", True, WHITE)
 button_text_quit = button_font.render("Quitter", True, WHITE)
+button_text_mini1 = button_font.render("Mini Game 1", True, WHITE)
 button_rect_join = pygame.Rect(220, 200, 200, 50)
+button_rect_mini1 = pygame.Rect(220, 300, 200, 50)
 button_rect_quit = pygame.Rect(220, 300, 200, 50)
 button_color = RED
 users_rect = pygame.Rect(120, 100, 400, 250)
@@ -183,6 +185,8 @@ def game():
                     display_lobby(input_box.text, launch_event)
                     if launch_event.is_set():
                         running = False
+                if button_rect_mini1.collidepoint(event.pos):
+                       mini_game1()
 
             input_box.handle_event(event)
 
@@ -192,9 +196,12 @@ def game():
         input_box.draw(screen)
         pygame.draw.rect(screen, button_color, button_rect_join)
         screen.blit(button_text_join, (button_rect_join.x + 20, button_rect_join.y + 10))
+        pygame.draw.rect(screen, button_color, button_rect_mini1)
+        screen.blit(button_text_mini1, (button_rect_mini1.x + 20, button_rect_mini1.y + 10))
         pygame.display.flip()
 
     launch_game()
     print("Fin du programme")
 
 game()
+
