@@ -204,4 +204,3 @@ def game():
     print("Fin du programme")
 
 game()
-

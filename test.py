@@ -4,6 +4,8 @@ import threading
 import socket
 
 player_health = 10
+playing = True
+stop_event = threading.Event()
 
 class Player2:
     def __init__(self, x, y, color):
@@ -25,11 +27,14 @@ def parse_data_and_get_position(data, player2):
         print(f"Error parsing data: {e}")
 
 def receive_data_from_server(client, player2, screen, player_size):
-    while True:
+    while not stop_event.is_set():
         data = client.recv(1024)
+        if not data:
+            break
         parse_data_and_get_position(data, player2)
         p2_rect = pygame.draw.rect(screen, player2.color, (player2.x, player2.y, player_size, player_size))
         pygame.display.update(p2_rect)
+    print("End of receive_data_from_server")
 
 def send_player_position_to_server(client, player_rect):
     data = f"{player_rect.x},{player_rect.y}".encode()
@@ -64,12 +69,14 @@ def load_map(map_index):
 
 def reduce_health():
     global player_health
-    while player_health > 0:
+    while player_health > 0 and not stop_event.is_set():
         player_health -= 1
         print(f"Health: {player_health}")
         pygame.time.delay(1000)
+    print("End of reduce_health")
 
 def MiniGame2(client):
+    global playing
     global player_health
     pygame.init()
 
@@ -117,10 +124,14 @@ def MiniGame2(client):
         if player_health <= 0:
             print("Vous avez perdu !")
             running = False
+            playing = False
+            stop_event.set()  # Set the event to stop the threads
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                playing = False
+                stop_event.set()  # Set the event to stop the threads
         
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
@@ -165,6 +176,8 @@ def MiniGame2(client):
             else:
                 print("Toutes les cartes ont été complétées !")
                 running = False
+                playing = False
+                stop_event.set()  # Set the event to stop the threads
 
         screen.fill(WHITE)
         pygame.draw.rect(screen, BLACK, player_rect)
@@ -180,7 +193,12 @@ def MiniGame2(client):
         screen.blit(health_text, (10, 10))
 
         pygame.display.flip()
-        clock.tick(60) 
+        clock.tick(60)
+
+    # Ensure all threads are stopped before quitting
+    receive_thread.join()
+    health_thread.join()
 
     pygame.quit()
     sys.exit()
+

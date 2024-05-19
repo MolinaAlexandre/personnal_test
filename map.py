@@ -326,5 +326,3 @@ def mini_game1():
         else:
             game_over(_core)
     exit(0)
-
-mini_game1()
