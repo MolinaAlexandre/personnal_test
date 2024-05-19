@@ -1,4 +1,5 @@
 import pygame
+import random
 
 sand_color = (224, 205, 169)
 
@@ -72,10 +73,6 @@ class Doors():
         self.animation_speed = 0.1
         self.last_update = pygame.time.get_ticks()
 
-class Character():
-    def __init__(self) -> None:
-        pass
-
 
     def load_images(self, sheet):
         images = {
@@ -105,6 +102,48 @@ class Character():
             self.current_state = self.animation_frames[self.animation_index]
             self.image = self.images[self.current_state]
 
+class Character():
+    def __init__(self, img_one, img_two, img_three, img_four, x, y):
+        self.one = pygame.image.load(img_one).convert_alpha()
+        self.two = pygame.image.load(img_two).convert_alpha()
+        self.three = pygame.image.load(img_three).convert_alpha()
+        self.four = pygame.image.load(img_four).convert_alpha()
+        self.x = x
+        self.y = y
+        self.images = self.load_images()
+        self.current_state = 'one'
+        self.image = self.images[self.current_state]
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.animation_frames = ["one", "two", "three", "four"]
+        self.animation_index = 0
+        self.animation_speed = 0.1
+        self.last_update = pygame.time.get_ticks()
+
+
+    def load_images(self):
+        images = {
+            'one': self.one,
+            'two': self.two,
+            'three': self.three,
+            'four': self.four
+        }
+        return images
+
+    def update(self, new_state):
+        if new_state in self.images:
+            self.current_state = new_state
+            self.image = self.images[self.current_state]
+
+    def make_animation(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.animation_speed * 1000:
+            self.last_update = now
+            self.animation_index += 1
+            if self.animation_index >= len(self.animation_frames):
+                self.animation_index = 0
+            self.current_state = self.animation_frames[self.animation_index]
+            self.image = self.images[self.current_state]
 
 def draw_doors(screen, _doors):
     for i in _doors:
@@ -155,12 +194,17 @@ class Core:
         self.game_two = Text("Game_MULTI", 900, 100, 150, "Assets/Roboto/Roboto-Black.ttf")
         self.game_one = Text("Game_SOLO", 100, 100, 150, "Assets/Roboto/Roboto-Black.ttf")
         self.previous_state = "menu"
+        self.character = Character("Assets/stickman_1.png", "Assets/stickman_2.png", "Assets/stickman_3.png", "Assets/stickman_4.png", 200, 400)
+        self.random = random_number()
+        self.column = 0
 
     def reset(self):
         self._time.reset()
         self._flames.empty()
         self._flames.add(Flame("Assets/flammes.png", self.flame_x, 0))
         self.flame_x = -50
+        self.character.rect.topleft = (200, 400)
+
 
     def update_state(self):
         for event in pygame.event.get():
@@ -169,31 +213,79 @@ class Core:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_pos = pygame.mouse.get_pos()
                 self.previous_state = self._state
-                if (self._menu.is_clicked(self.mouse_pos)):
+                if (self._menu.is_clicked(self.mouse_pos) and self._state == "game_over"):
                     self.reset()
                     self._state = "menu"
-                elif (self._restart.is_clicked(self.mouse_pos)):
-                    self.reset()
-                    self._state = self.previous_state
-                elif (self._quit.is_clicked(self.mouse_pos)):
-                    self.running = False
-                elif (self.game_one.is_clicked(self.mouse_pos)):
+                elif (self._restart.is_clicked(self.mouse_pos) and self._state == "game_over"):
                     self.reset()
                     self._state = "game_SOLO"
-                elif (self.game_two.is_clicked(self.mouse_pos)):
-                    self._state = "game_MULTI"
+                elif (self._quit.is_clicked(self.mouse_pos) and self._state == "game_over"):
+                    self.running = False
+                elif (self.game_one.is_clicked(self.mouse_pos) and self._state == "menu"):
+                    self._state = "game_SOLO"
+                    self.previous_state = self._state
+                elif (self.game_two.is_clicked(self.mouse_pos) and self._state == "menu"):
+                    self.previous_state = self._state
+
+    def get_index(self):
+        if pygame.sprite.collide_rect(self.character, self._doors[0]):
+            self._doors[0].make_animation()
+            self._state = "game_over"
+            return
+        for index, door in enumerate(self._doors):
+            if (index < (4 * self.column + 1) and pygame.sprite.collide_rect(self.character, door)):
+                return True
+            if (index % 4) == self.random and pygame.sprite.collide_rect(self.character, door):
+                door.make_animation()
+                self.random = random_number()
+                self.column += 1
+                return True
+        return False
+
+    def game_event_update(self):
+        if (pygame.sprite.spritecollide(self.character, self._flames, False)):
+            self._state = "game_over"
+            self.reset()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    self.character.x -= 30
+                elif event.key == pygame.K_RIGHT and not pygame.sprite.spritecollide(self.character, self._boxes, False):
+                    if (not pygame.sprite.spritecollide(self.character, self._doors, False)):
+                        self.character.x += 30
+                    else:
+                        if (self.get_index()):
+                            self.character.x += 30
+                elif event.key == pygame.K_UP and not pygame.sprite.spritecollide(self.character, self._boxes, False):
+                    if (not pygame.sprite.spritecollide(self.character, self._doors, False)):
+                        self.character.y -= 30
+                    else:
+                        if (self.get_index()):
+                            self.character.x -= 30
+                elif event.key == pygame.K_DOWN and not pygame.sprite.spritecollide(self.character, self._boxes, False):
+                    if (not pygame.sprite.spritecollide(self.character, self._doors, False)):
+                        self.character.y += 30
+                    else:
+                        if (self.get_index()):
+                            self.character.y += 30
+                self.character.rect.topleft = (self.character.x, self.character.y)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.reset()
+                self.previous_state = self._state
+                self._state = "menu"
+
+def random_number():
+    return random.randint(0, 3)
 
 def game(_core):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            _core.running = False
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            _core.reset()
-            _core.previous_state = _core._state
-            _core._state = "menu"
+    _core.game_event_update()
     _core._screen.fill(sand_color)
     _core._boxes.draw(_core._screen)
     draw_doors(_core._screen, _core._doors)
+    _core.character.make_animation()
+    _core._screen.blit(_core.character.image, _core.character.rect.topleft)
     _core._flames.draw(_core._screen)
     _core._time.update_time(_core._screen)
     if _core._time.flame_added:
@@ -217,20 +309,22 @@ def menu(_core):
     _core.game_two.draw_text(_core._screen)
     pygame.display.flip()
 
-def main():
+def mini_game1():
     pygame.init()
-
+    pygame.mixer.init()
     _core = Core()
+
+    pygame.mixer.music.load("Assets/Those Who Inherit The Will of Fire - Naruto OST 3.mp3")
+    pygame.mixer.music.play(-1)
     while _core.running:
         if _core._state == "menu":
             menu(_core)
         elif _core._state == "game_SOLO":
             game(_core)
         elif _core._state == "game_MULTI":
-            game(_core)
+            game_over(_core)
         else:
             game_over(_core)
     exit(0)
 
-if __name__ == "__main__":
-    main()
+mini_game1()
