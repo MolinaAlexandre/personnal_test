@@ -17,7 +17,7 @@ class Player2:
 def parse_data_and_get_position(data, player2):
     full_data = data.decode('utf-8')
     print("VALEUR RECUE : ", full_data)
-    
+
     try:
         last_seven_chars = full_data[-7:]
         x, y = last_seven_chars.split(",")
@@ -132,7 +132,7 @@ def MiniGame2(client):
                 running = False
                 playing = False
                 stop_event.set()  # Set the event to stop the threads
-        
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             player_x -= player_speed
@@ -144,7 +144,7 @@ def MiniGame2(client):
             is_jumping = True
             player_velocity_y = player_jump
             send_player_position_to_server(client, pygame.Rect(player_x, player_y, player_size, player_size))
-        
+
         player_velocity_y += gravity
         player_y += player_velocity_y
 
